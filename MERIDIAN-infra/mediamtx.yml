@@ -1,0 +1,20 @@
+# --- WebRTC server ---
+webrtc: yes
+webrtcAddress: :8889 # broadcaster port
+webrtcLocalUDPAddress: :8189 # listener port
+webrtcIPsFromInterfaces: yes
+webrtcAllowOrigin: "*"
+webrtcICEServers2:
+  - url: stun:stun.l.google.com:19302
+
+# --- Default path settings ---
+pathDefaults:
+  overridePublisher: no
+
+# --- Paths ---
+# access video in http://127.0.0.1:8889/<path_name>
+paths:
+  meridian_cam: # stream XXXX://127.0.0.1:YYYY/meridian_cam
+    {}
+  client_cam: # stream XXXX://127.0.0.1:YYYY/client_cam
+    {}
