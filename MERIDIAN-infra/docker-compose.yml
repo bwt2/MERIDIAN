@@ -1,0 +1,13 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+  # coturn:
+  #   image: coturn/coturn:edge-alpine
+  #   container_name: coturn-STUN-TURN-server
+  #   network_mode: host
+  #   restart: unless-stopped

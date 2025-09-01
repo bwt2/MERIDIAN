@@ -14,7 +14,7 @@ export default function App() {
       setIsInvalidInput(true);
       return;
     }
-    navigate(`/Call/${encodeURIComponent(code)}`);
+    navigate(`/client/${encodeURIComponent(code)}`);
   };
 
   return (
