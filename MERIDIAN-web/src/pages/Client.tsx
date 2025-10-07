@@ -22,7 +22,14 @@ export default function Client() {
     const init = async () => {
       try {
         const pc = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            {
+              urls: `turn:${mediamtxHost}:8189`,
+              username: "meridian",
+              credential: "meridian123",
+            },
+          ],
         });
         pcRef.current = pc;
 
