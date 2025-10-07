@@ -6,7 +6,10 @@ export default function Client() {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
-  const url = `http://${window.location.hostname}:8889/meridian_cam/whep`;
+
+  // Use env fallback to window.location.hostname
+  const mediamtxHost = import.meta.env.VITE_MEDIAMTX_HOST || window.location.hostname;
+  const url = `http://${mediamtxHost}:8889/meridian_cam/whep`;
 
   const { clientId } = useParams(); // for auth later ?
   useEffect(() => {
