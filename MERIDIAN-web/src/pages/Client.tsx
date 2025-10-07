@@ -17,42 +17,75 @@ export default function Client() {
 
   useEffect(() => {
     const init = async () => {
-      const pc = new RTCPeerConnection();
-      pcRef.current = pc;
-      pc.addTransceiver("video", { direction: "recvonly" });
-      pc.addTransceiver("audio", { direction: "recvonly" });
-      pc.ontrack = (e) => {
-        if (!videoRef.current) return;
-        videoRef.current.srcObject = e.streams[0];
-      };
+      try {
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+        pcRef.current = pc;
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await new Promise<void>((resolve) => {
-        if (pc.iceGatheringState === "complete") return resolve();
-        const onState = () => {
-          if (pc.iceGatheringState === "complete") {
-            pc.removeEventListener("icegatheringstatechange", onState);
-            resolve();
-          }
+        // Log connection state changes
+        pc.onconnectionstatechange = () => {
+          console.log("Connection state:", pc.connectionState);
         };
-        pc.addEventListener("icegatheringstatechange", onState);
-      });
 
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/sdp" },
-        body: pc.localDescription?.sdp,
-      });
+        pc.oniceconnectionstatechange = () => {
+          console.log("ICE connection state:", pc.iceConnectionState);
+        };
 
-      if (!resp.ok) {
-        return;
+        pc.addTransceiver("video", { direction: "recvonly" });
+        pc.addTransceiver("audio", { direction: "recvonly" });
+
+        pc.ontrack = (e) => {
+          console.log("Received track:", e.track.kind);
+          if (!videoRef.current) return;
+          videoRef.current.srcObject = e.streams[0];
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        console.log("Waiting for ICE gathering...");
+        await new Promise<void>((resolve) => {
+          if (pc.iceGatheringState === "complete") return resolve();
+          const onState = () => {
+            if (pc.iceGatheringState === "complete") {
+              pc.removeEventListener("icegatheringstatechange", onState);
+              resolve();
+            }
+          };
+          pc.addEventListener("icegatheringstatechange", onState);
+        });
+        console.log("ICE gathering complete");
+
+        console.log("Sending offer to", url);
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/sdp" },
+          body: pc.localDescription?.sdp,
+        });
+
+        if (!resp.ok) {
+          console.error("WHEP request failed:", resp.status, resp.statusText);
+          const errorText = await resp.text();
+          console.error("Error response:", errorText);
+          return;
+        }
+
+        const answerSdp = await resp.text();
+        console.log("Received answer, setting remote description");
+        await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+        console.log("WebRTC connection established");
+      } catch (error) {
+        console.error("Error initialising WebRTC:", error);
       }
-
-      const answerSdp = await resp.text();
-      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
     };
     init();
+
+    return () => {
+      if (pcRef.current) {
+        pcRef.current.close();
+      }
+    };
   }, [url]);
 
   return (
