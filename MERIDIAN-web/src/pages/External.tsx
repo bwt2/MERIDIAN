@@ -1,19 +1,22 @@
-import { useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router";
-import { isNumeric } from "../utils";
+import { useEffect, useRef, useState } from "react";
 
-export default function Client() {
-  const navigate = useNavigate();
+export default function External() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
-  const url = `http://${window.location.hostname}:8889/meridian_cam/whep`;
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const { clientId } = useParams(); // for auth later ?
+  const url = `http://${window.location.hostname}:8889/internal_cam/whep`;
+  const [connecting, setConnecting] = useState<boolean>(true);
+
+  // Attach stream to video whenever either ref is ready
   useEffect(() => {
-    if (!clientId || !isNumeric(clientId)) {
-      navigate("/", { replace: true });
-    }
-  }, [clientId, navigate]);
+    const v = videoRef.current;
+    if (!v || !streamRef.current) return;
+    v.srcObject = streamRef.current;
+
+    // Try to autoplay
+    v.play().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -22,8 +25,12 @@ export default function Client() {
       pc.addTransceiver("video", { direction: "recvonly" });
       pc.addTransceiver("audio", { direction: "recvonly" });
       pc.ontrack = (e) => {
-        if (!videoRef.current) return;
-        videoRef.current.srcObject = e.streams[0];
+        streamRef.current = e.streams[0];
+        const v = videoRef.current;
+        if (v) {
+          v.srcObject = streamRef.current;
+          v.play().catch(() => {});
+        }
       };
 
       const offer = await pc.createOffer();
@@ -51,18 +58,25 @@ export default function Client() {
 
       const answerSdp = await resp.text();
       await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+      setConnecting(false);
     };
     init();
   }, [url]);
 
   return (
-    <main className="bg-black">
+    <main className="bg-black flex items-center justify-center w-screen h-screen relative">
       <video
         ref={videoRef}
         playsInline
         autoPlay
-        className="w-screen h-screen"
+        disablePictureInPicture
+        className="w-screen h-screen rotate-90"
       />
+      {connecting && (
+        <h1 className="animate-pulse text-white text-8xl absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          Connecting
+        </h1>
+      )}
     </main>
   );
 }
