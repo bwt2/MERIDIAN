@@ -8,16 +8,6 @@ export default function External() {
   const url = `http://${window.location.hostname}:8889/internal_cam/whep`;
   const [connecting, setConnecting] = useState<boolean>(true);
 
-  // Attach stream to video whenever either ref is ready
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !streamRef.current) return;
-    v.srcObject = streamRef.current;
-
-    // Try to autoplay
-    v.play().catch(() => {});
-  }, []);
-
   useEffect(() => {
     const init = async () => {
       const pc = new RTCPeerConnection();
@@ -61,6 +51,18 @@ export default function External() {
       setConnecting(false);
     };
     init();
+
+    return () => {
+      try {
+        pcRef.current?.getSenders().forEach((s) => s.track?.stop());
+        pcRef.current?.getReceivers().forEach((r) => r.track?.stop());
+      } catch {
+        console.error("Something went wrong cleaning up the peer connection.");
+      }
+      pcRef.current?.close();
+      pcRef.current = null;
+      streamRef.current = null;
+    };
   }, [url]);
 
   return (
@@ -70,10 +72,16 @@ export default function External() {
         playsInline
         autoPlay
         disablePictureInPicture
-        className="w-screen h-screen rotate-90"
+        className="
+          rotate-90 sm:rotate-0 origin-center
+          w-auto h-auto
+          max-w-[100svh] max-h-[100svw]
+          sm:max-w-[100svw] sm:max-h-[100svh]
+          object-contain
+        "
       />
       {connecting && (
-        <h1 className="animate-pulse text-white text-8xl absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <h1 className="animate-pulse text-white text-6xl sm:text-8xl absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           Connecting
         </h1>
       )}

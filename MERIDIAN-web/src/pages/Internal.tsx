@@ -8,20 +8,7 @@ export default function Internal() {
   const url = `http://${window.location.hostname}:8889/external_cam/whep`;
   const [connecting, setConnecting] = useState<boolean>(true);
 
-  // Attach stream to video whenever either ref is ready
   useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !streamRef.current) return;
-    v.srcObject = streamRef.current;
-
-    // Try to autoplay
-    v.play().catch(() => {
-      alert("a");
-    });
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
     const init = async () => {
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
@@ -60,19 +47,17 @@ export default function Internal() {
       }
 
       const answerSdp = await resp.text();
-      if (cancelled) return;
       await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
       setConnecting(false);
     };
     init();
 
     return () => {
-      cancelled = true;
       try {
         pcRef.current?.getSenders().forEach((s) => s.track?.stop());
         pcRef.current?.getReceivers().forEach((r) => r.track?.stop());
       } catch {
-        alert("a");
+        console.error("Something went wrong cleaning up the peer connection.");
       }
       pcRef.current?.close();
       pcRef.current = null;
