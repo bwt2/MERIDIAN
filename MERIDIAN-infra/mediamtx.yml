@@ -4,8 +4,19 @@ webrtcAddress: :8889 # broadcaster port
 webrtcLocalUDPAddress: :8189 # listener port
 webrtcIPsFromInterfaces: yes
 webrtcAllowOrigin: "*"
+
+# ICE servers configuration
 webrtcICEServers2:
   - url: stun:stun.l.google.com:19302
+  # Built-in TURN server
+  - url: turn:172.20.10.7:8189?transport=udp
+    username: meridian
+    password: meridian123
+
+# Advertise this IP for external access
+webrtcAdditionalHosts:
+  - 172.20.10.7
+webrtcICETCPMuxAddress:
 
 # --- Default path settings ---
 pathDefaults:
