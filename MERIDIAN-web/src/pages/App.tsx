@@ -8,13 +8,14 @@ export default function App() {
   const navigate = useNavigate();
   const [isInvalidInput, setIsInvalidInput] = useState<boolean>(false);
 
-  const handleClick = () => {
+  const handleClick = (mode: "publish" | "view") => {
     const code = inputRef.current?.value || "";
     if (!isNumeric(code)) {
       setIsInvalidInput(true);
       return;
     }
-    navigate(`/client/${encodeURIComponent(code)}`);
+    const path = mode === "publish" ? "/publish" : "/client";
+    navigate(`${path}/${encodeURIComponent(code)}`);
   };
 
   return (
@@ -30,12 +31,20 @@ export default function App() {
         className="bg-gray-700 text-white placeholder-gray-400 m-4 w-full max-w-xs sm:max-w-[20vw] md:max-w-md h-12 sm:h-16 md:h-20 px-4 sm:px-6 md:px-8 rounded-2xl border-2 border-gray-500 focus:border-white focus:ring-2 outline-none transition text-base sm:text-lg md:text-xl"
         placeholder="Enter code..."
       />
-      <button
-        onClick={handleClick}
-        className="mt-4 w-full max-w-xs sm:max-w-[20vw] md:max-w-md h-12 sm:h-16 md:h-20 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white text-lg sm:text-xl md:text-2xl font-semibold rounded-2xl transition border-2 border-gray-500 focus:outline-none focus:border-white focus:ring-2 focus:ring-gray-400"
-      >
-        Create / Join
-      </button>
+      <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full max-w-xs sm:max-w-[20vw] md:max-w-md">
+        <button
+          onClick={() => handleClick("publish")}
+          className="flex-1 h-12 sm:h-16 md:h-20 flex items-center justify-center bg-red-700 hover:bg-red-600 text-white text-lg sm:text-xl md:text-2xl font-semibold rounded-2xl transition border-2 border-red-500 focus:outline-none focus:border-white focus:ring-2 focus:ring-red-400"
+        >
+          Publish
+        </button>
+        <button
+          onClick={() => handleClick("view")}
+          className="flex-1 h-12 sm:h-16 md:h-20 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white text-lg sm:text-xl md:text-2xl font-semibold rounded-2xl transition border-2 border-gray-500 focus:outline-none focus:border-white focus:ring-2 focus:ring-gray-400"
+        >
+          View
+        </button>
+      </div>
       <span
         className={`mt-4 text-red-500 text-sm sm:text-base md:text-lg transition-all duration-200 ${
           isInvalidInput ? "visible" : "invisible"

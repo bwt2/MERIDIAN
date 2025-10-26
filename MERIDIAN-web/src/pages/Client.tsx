@@ -9,7 +9,7 @@ export default function Client() {
 
   // Use env fallback to window.location.hostname
   const mediamtxHost = import.meta.env.VITE_MEDIAMTX_HOST || window.location.hostname;
-  const url = `http://${mediamtxHost}:8889/meridian_cam/whep`;
+  const url = `http://${mediamtxHost}:8889/client_cam/whep`;
 
   const { clientId } = useParams(); // for auth later ?
   useEffect(() => {

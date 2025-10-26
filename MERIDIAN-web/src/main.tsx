@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router";
 import { createRoot } from "react-dom/client";
 import App from "./pages/App.tsx";
 import Client from "./pages/Client.tsx";
+import Publisher from "./pages/Publisher.tsx";
 import "./styles/global.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -9,6 +10,7 @@ createRoot(document.getElementById("root")!).render(
     <Routes>
       <Route path="/" element={<App />} />
       <Route path="/client/:clientId" element={<Client />} />
+      <Route path="/publish/:clientId" element={<Publisher />} />
     </Routes>
   </BrowserRouter>,
 );
