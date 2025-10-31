@@ -5,6 +5,8 @@ Dockerfile for MediaMTX media server, hosts WebRTC server with WHIP/WHEP and aut
 docker compose up
 ```
 
+Note: Publishing uses `/whip` (producer). Playback uses `/whep` (viewer).
+
 ## Test
 ### Mock External Camera Stream
 Using local `/dev/video0` camera device, broadcast RSTP to `rtsp://127.0.0.1:8554/external_cam` to be read by `/internal` page.

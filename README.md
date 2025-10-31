@@ -20,20 +20,19 @@ pnpm dev
 flowchart TD
 subgraph MERIDIAN
     subgraph Raspberry Pi
-        subgraph WebRTC Infra 
-            MM["MediaMTX"]
-        end
+        MM["MediaMTX"]
         ym["Yolo Model"]
     end
-    rpi0["Raspberry Pi Zero"]
+    rpi0["Raspberry Pi Zero + Camera"]
     m["Stepper Motor"]
-    sm["Smartphone"]
+    id["Internal Device"]
 end
 ed["External device"]
 
 ym -- "Commands" --> m
-rpi0 -- "RTSP Camera Stream" --> ym
-rpi0 -- "RTSP Camera Stream" --> MM
-MM <-- "WebRTC" --> ed
-MM <-- "WebRTC" --> sm
+rpi0 -- "UDP<br>(video)" --> ym
+rpi0 -- "UDP<br>(video)" --> MM
+MM <-- "WebRTC<br>(video, audio)" --> ed
+MM -- "WebRTC<br>(video, audio)" --> id
+id -- "WebRTC<br>(audio)" --> MM
 ```

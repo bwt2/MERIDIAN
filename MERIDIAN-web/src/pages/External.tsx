@@ -1,30 +1,72 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  startVideoPlaybackWithStream,
+  cleanupPcRef,
+  postWHIPWHEP,
+} from "../utils";
 
 export default function External() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  const url = `http://${window.location.hostname}:8889/internal_cam/whep`;
+  const subPcRef = useRef<RTCPeerConnection | null>(null);
+  const pubPcRef = useRef<RTCPeerConnection | null>(null);
   const [connecting, setConnecting] = useState<boolean>(true);
 
+  const localDeviceConstraints: MediaStreamConstraints = {
+    video: true,
+    audio: true,
+  };
+
+  const subUrl = `http://${window.location.hostname}:8889/internal_cam/whep`;
+  const pubUrl = `http://${window.location.hostname}:8889/external_cam/whip`;
+
   useEffect(() => {
-    const init = async () => {
+    /* ---------- SUBSCRIBE (WHEP) ---------- */
+    const initSub = async () => {
+      /* Set up RTC peer connection */
       const pc = new RTCPeerConnection();
-      pcRef.current = pc;
+      subPcRef.current = pc;
       pc.addTransceiver("video", { direction: "recvonly" });
       pc.addTransceiver("audio", { direction: "recvonly" });
+
+      // Set up callback when RTC peer connection receives audio / video stream (i.e. "track")
       pc.ontrack = (e) => {
-        streamRef.current = e.streams[0];
-        const v = videoRef.current;
-        if (v) {
-          v.srcObject = streamRef.current;
-          v.play().catch(() => {});
-        }
+        startVideoPlaybackWithStream(videoRef, e.streams[0]);
       };
 
+      /* Make local SDP (posting what we expect) offer for ICE gathering */
       const offer = await pc.createOffer();
+      pc.setLocalDescription(offer);
+
+      /* Wait for ICE (i.e. network paths to rempte peers) gathering to complete */
+      if (pc.iceGatheringState === "complete") {
+        postWHIPWHEP(pc, subUrl, setConnecting);
+      } else {
+        const onState = () => {
+          if (pc.iceGatheringState === "complete") {
+            pc.removeEventListener("icegatheringstatechange", onState);
+            postWHIPWHEP(pc, subUrl, setConnecting);
+          }
+        };
+        pc.addEventListener("icegatheringstatechange", onState);
+      }
+    };
+
+    /* ---------- PUBLISH (WHIP) ---------- */
+    const initPub = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia(
+        localDeviceConstraints,
+      );
+
+      const pc = new RTCPeerConnection();
+      pubPcRef.current = pc;
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: false,
+        offerToReceiveVideo: false,
+      });
       await pc.setLocalDescription(offer);
+
       await new Promise<void>((resolve) => {
         if (pc.iceGatheringState === "complete") return resolve();
         const onState = () => {
@@ -33,37 +75,21 @@ export default function External() {
             resolve();
           }
         };
-        pc.addEventListener("icegatheringstatechange", onState);
+        pc.addEventListener("icegatheringstatechange", onState, { once: true });
       });
 
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/sdp" },
-        body: pc.localDescription?.sdp,
-      });
-
-      if (!resp.ok) {
-        return;
-      }
-
-      const answerSdp = await resp.text();
-      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
-      setConnecting(false);
+      postWHIPWHEP(pc, pubUrl, setConnecting);
     };
-    init();
+
+    /* ---------- INIT ---------- */
+    initPub();
+    initSub();
 
     return () => {
-      try {
-        pcRef.current?.getSenders().forEach((s) => s.track?.stop());
-        pcRef.current?.getReceivers().forEach((r) => r.track?.stop());
-      } catch {
-        console.error("Something went wrong cleaning up the peer connection.");
-      }
-      pcRef.current?.close();
-      pcRef.current = null;
-      streamRef.current = null;
+      cleanupPcRef(subPcRef);
+      cleanupPcRef(pubPcRef);
     };
-  }, [url]);
+  });
 
   return (
     <main className="bg-black flex items-center justify-center w-screen h-screen relative">
@@ -72,6 +98,7 @@ export default function External() {
         playsInline
         autoPlay
         disablePictureInPicture
+        muted
         className="
           rotate-90 sm:rotate-0 origin-center
           w-auto h-auto
