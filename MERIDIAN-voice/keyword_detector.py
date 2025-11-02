@@ -3,9 +3,11 @@ import numpy as np
 from openwakeword.model import Model
 from openwakeword import utils
 import os
-from typing import Generator
+from typing import Generator, Union, Optional, Callable
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+from pydub import AudioSegment
 
 CHUNK_SIZE = 1280
 CHANNELS = 1
@@ -19,12 +21,22 @@ class WakeWordDetection:
 
 class KeywordDetector:
     """
-    Generator that you pass a callback fn to or just consume directly
+    Generator that you pass a callback fn to or just consume directly.
 
-        def my_callback(detection):
+    Examples:
+        # mic
+        detector = KeywordDetector()
+        for detection in detector.listen():
             print(f"Got {detection.wake_word}!")
 
+        # From MP4 file:
         detector = KeywordDetector()
+        for detection in detector.listen(source="recording.mp4"):
+            print(f"Got {detection.wake_word}!")
+
+        # With callback:
+        def my_callback(detection):
+            print(f"Got {detection.wake_word}!")
         detector.listen_with_callback(my_callback)
     """
 
@@ -59,10 +71,55 @@ class KeywordDetector:
             print(f"No custom models found")
             return
 
-    def listen(self) -> Generator[WakeWordDetection, None, None]:
+    def _process_audio_from_file(self, file_path):
         """
-        Generator mode
+        Process audio from mp4
+
+        Args:
+            file_path: Path to the audio/video file
+
+        Yields:
+            WakeWordDetection: Detection 
         """
+        print(f"Loading audio from {file_path}...")
+
+        audio = AudioSegment.from_file(file_path)
+
+        # Convert to mono channel
+        audio = audio.set_channels(1)
+        audio = audio.set_frame_rate(self.sample_rate)
+        audio = audio.set_sample_width(2)
+
+        samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
+
+        # Process chunkwise/discretise it
+        num_chunks = len(samples) // self.chunk_size
+        for i in range(num_chunks):
+            start_idx = i * self.chunk_size
+            end_idx = start_idx + self.chunk_size
+            chunk = samples[start_idx:end_idx]
+
+            # inference
+            predictions = self.model.predict(chunk)
+
+            for wake_word, score in predictions.items():
+                if score > self.confidence_threshold:
+                    timestamp_seconds = start_idx / self.sample_rate
+                    yield WakeWordDetection(
+                        wake_word=wake_word,
+                        confidence=score,
+                        timestamp=datetime.fromtimestamp(timestamp_seconds)  # Relative time
+                    )
+
+        print("File done")
+
+    def listen(self, source=None):
+        # If source - process it
+        if source is not None:
+            yield from self._process_audio_from_file(str(source))
+            return
+
+        # Otherwise use mic
         try:
             with sd.InputStream(
                 samplerate=self.sample_rate,
@@ -71,7 +128,7 @@ class KeywordDetector:
                 blocksize=self.chunk_size
             ) as stream:
                 print("Listening..")
-                
+
                 while True:
                     audio_data, overflowed = stream.read(self.chunk_size)
                     if overflowed:
@@ -82,7 +139,7 @@ class KeywordDetector:
                     # Inference
                     predictions = self.model.predict(audio_data)
 
-                    # Yield detections 
+                    # Yield detections
                     for wake_word, score in predictions.items():
                         if score > self.confidence_threshold:
                             yield WakeWordDetection(
@@ -96,18 +153,47 @@ class KeywordDetector:
         finally:
             print("Fin")
 
-    def listen_with_callback(self, callback,stop_condition) -> None:
-        for detection in self.listen():
+    def listen_with_callback(self, callback, stop_condition=None, source=None):
+        """
+        Listen with a callback function.
+
+        Args:
+            callback: Function to call when wake word is detected
+            stop_condition: Optional function that returns True to stop listening
+            source: Optional file path for audio source (None = live mic)
+
+        Example:
+            def handle(det):
+                print(f"Got {det.wake_word}")
+
+            detector.listen_with_callback(handle, source="test.mp4")
+        """
+        for detection in self.listen(source=source):
             callback(detection)
             if stop_condition and stop_condition(detection):
                 break
 
 def main():
-    """Example with generator"""
+    import sys
+
     detector = KeywordDetector(confidence_threshold=0.5)
 
-    for detection in detector.listen():
-        print(f"Detected: {detection.wake_word} (conf: {detection.confidence:.2f}) at {detection.timestamp.strftime('%H:%M:%S')}")
+    # Check if a file path was provided as argument
+    if len(sys.argv) > 1:
+        audio_file = sys.argv[1]
+        print(f"Processing audio from file: {audio_file}")
+
+        for detection in detector.listen(source=audio_file):
+            print(f"Detected: {detection.wake_word} "
+                  f"(conf: {detection.confidence:.2f}) "
+                  f"at {detection.timestamp.second}s")
+    else:
+        print("mic mode")
+
+        for detection in detector.listen():
+            print(f"Detected: {detection.wake_word} "
+                  f"(conf: {detection.confidence:.2f}) "
+                  f"at {detection.timestamp.strftime('%H:%M:%S')}")
 
 if __name__ == "__main__":
     main()
