@@ -1,6 +1,6 @@
 # MERIDIAN-YOLO
 
-YOLOv8 inference for MERIDIAN video streams.
+YOLOv8 person tracking with position detection for MERIDIAN video streams.
 
 ## Installation
 
@@ -12,6 +12,22 @@ pip install -r requirements.txt
 
 ## Usage
 
-```bash
-python3 yolo_inference.py --source /dev/video0 --show
+For integration (eg stepper motor control):
+
+```python
+from yolo_inference import PersonTracker
+
+tracker = PersonTracker(conf_threshold=0.5)
+
+for detection in tracker.track("video.mp4"):
+    if detection:
+        print(f"Offset: {detection.offset:.2f}")
+        print(f"Confidence: {detection.confidence:.2f}")
+        print(f"BBox: {detection.bbox}")
+
+        # Control logic
+        if abs(detection.offset) > 0.3:
+            print("Person too far")
+    else:
+        print("No person detected")
 ```

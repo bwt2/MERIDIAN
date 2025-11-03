@@ -2,9 +2,93 @@ import cv2
 from ultralytics import YOLO
 import argparse
 import numpy as np
+from dataclasses import dataclass
+from typing import Optional, Tuple
+
+
+@dataclass
+class PersonDetection:
+    """Detection data for a person in a frame"""
+    offset: float  # horizontal offset % from center (-1 to 1 with 0 at middle)
+    conf: float
+    bbox: Tuple[int, int, int, int]
+    frame_number: int
+
+
+class PersonTracker:
+    """
+    API for tracking (largest person)/people in video streams and position relative to frame center.
+    """
+
+    def __init__(self, model: str = "yolov8n.pt", conf_threshold: float = 0.25):
+        self.model = YOLO(model)
+        self.conf_threshold = conf_threshold
+
+    def track(self, source):
+        """
+        Generator that yields PersonDetection or None for each frame
+        Tracks only the closest person (largest bounding box)
+        """
+        cap = cv2.VideoCapture(source)
+
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video source: {source}")
+
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_center_x = width // 2
+        frame_count = 0
+
+        try:
+            while True:
+                ret, frame = cap.read()
+
+                if not ret:
+                    break
+
+                # Run inference
+                results = self.model(frame, conf=self.conf_threshold, verbose=False)
+                detections = results[0].boxes
+
+                # Filter for people only (class 0)
+                people = [box for box in detections if int(box.cls[0]) == 0]
+
+                if len(people) == 0:
+                    yield None
+                    frame_count += 1
+                    continue
+
+                # Find closest person (largest bounding box area)
+                closest_person = max(people, key=lambda box: self._bbox_area(box))
+
+                # Extract data
+                x1, y1, x2, y2 = closest_person.xyxy[0].cpu().numpy()
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                conf = float(closest_person.conf[0])
+
+                # Calculate horizontal offset from center
+                person_center_x = (x1 + x2) // 2
+                offset = (person_center_x - frame_center_x) / (width / 2)
+
+                yield PersonDetection(
+                    offset=offset,
+                    conf=conf,
+                    bbox=(x1, y1, x2, y2),
+                    frame_number=frame_count
+                )
+
+                frame_count += 1
+
+        finally:
+            cap.release()
+
+    def _bbox_area(self, box):
+        # For finding closest person
+        coords = box.xyxy[0].cpu().numpy()
+        return (coords[2] - coords[0]) * (coords[3] - coords[1])
 
 
 def main():
+    # old version for mic
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--source',
