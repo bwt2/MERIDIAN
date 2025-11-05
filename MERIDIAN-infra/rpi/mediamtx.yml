@@ -14,7 +14,8 @@ pathDefaults:
 # --- Paths ---
 # access video in http://127.0.0.1:8889/<path_name>
 paths:
-  internal_cam: # stream XXXX://127.0.0.1:YYYY/internal_cam
-    {}
-  external_cam: # stream XXXX://127.0.0.1:YYYY/external_cam
-    {}
+  internal_cam: # TODO: check UDP
+    source: udp://@:5555 
+    sourceOnDemand: no # keep the listener up even with no readers
+  # external_cam: # stream XXXX://127.0.0.1:YYYY/external_cam
+  #   {}
