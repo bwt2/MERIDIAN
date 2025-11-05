@@ -2,12 +2,12 @@
 Monorepo for all relevant MERIDIAN source code. 
 
 ## Install
-
+See installation steps in `MERIDIAN-infra`'s `README.md`
 ```bash
 cd MERIDIAN-infra
 docker compose up -d
 ```
-
+For external device's WebRTC web server: 
 ```bash
 cd MERIDIAN-web
 pnpm install
