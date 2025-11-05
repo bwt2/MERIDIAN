@@ -15,26 +15,44 @@ class MeridianController:
 
     def __init__(
         self,
-        video_source: str = "/dev/video0",
+        video_source: Optional[str] = None,
+        audio_source: Optional[str] = None,
         yolo_model: str = "yolov8n.pt",
         yolo_confidence: float = 0.65,
         voice_confidence: float = 0.5,
         show: bool = False
     ):
         self.video_source = video_source
+        self.audio_source = audio_source
         self.show = show
         self.tracking_enabled = False
         # NOTE this is not the queue for frames (ie if yolo is too slow). it's a backlog for stepper motor
         self.detection_queue: Queue[Optional[PersonDetection]] = Queue(maxsize=10)
         self.shutdown_flag = threading.Event()
 
-        self.person_tracker = PersonTracker(
-            model=yolo_model,
-            conf_threshold=yolo_confidence
-        )
+        # yolo iff video source is given
+        if self.video_source:
+            self.person_tracker = PersonTracker(
+                model=yolo_model,
+                conf_threshold=yolo_confidence
+            )
+        else:
+            self.person_tracker = None
+
         self.keyword_detector = KeywordDetector(
             confidence_threshold=voice_confidence
         )
+
+        if self.video_source:
+            print(f"Video source: {self.video_source}")
+            print(f"YOLO model: {yolo_model} (conf: {yolo_confidence})")
+        else:
+            print("NO video")
+
+        if self.audio_source:
+            print(f"Audio source: {self.audio_source}")
+        else:
+            print("Using mic")
 
     def handle_wake_word(self, detection: WakeWordDetection):
         print(f"Detected: {detection.wake_word} {detection.confidence:.2f}")
@@ -49,7 +67,7 @@ class MeridianController:
     def voice_listener_thread(self):
         print("Starting voice monitoring")
         try:
-            for detection in self.keyword_detector.listen():
+            for detection in self.keyword_detector.listen(source=self.audio_source):
                 if self.shutdown_flag.is_set():
                     break
                 self.handle_wake_word(detection)
@@ -125,9 +143,14 @@ class MeridianController:
         )
         voice_thread.start()
 
-        # Run tracking in main thread (blocking)
+        # Run tracking in main thread if video source is provided
         try:
-            self.tracking_thread()
+            if self.video_source:
+                self.tracking_thread()
+            else:
+                # Audio only 
+                while not self.shutdown_flag.is_set():
+                    time.sleep(0.1)
         except KeyboardInterrupt:
             self.shutdown_flag.set()
         finally:

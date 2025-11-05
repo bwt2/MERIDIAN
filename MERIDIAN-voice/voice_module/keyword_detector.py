@@ -38,7 +38,7 @@ class KeywordDetector:
         self.confidence_threshold = confidence_threshold
         self.chunk_size = chunk_size
         self.sample_rate = sample_rate
-        self.custome_models = custom_models
+        self.custom_models = custom_models
 
         openwakeword.utils.download_models()
 
