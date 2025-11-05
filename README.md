@@ -32,23 +32,13 @@ python3 main.py --source /dev/video0 --show
 ## Service Architecture
 
 ```mermaid
-flowchart TD
-subgraph MERIDIAN
-    subgraph Raspberry Pi
-        subgraph WebRTC Infra 
-            MM["MediaMTX"]
-        end
-        ym["Yolo Model"]
-    end
-    rpi0["Raspberry Pi Zero"]
-    m["Stepper Motor"]
-    sm["Smartphone"]
-end
-ed["External device"]
+sequenceDiagram
+  participant RPI as Rpi
+  participant EL as External Laptop (Linux)
+  participant IP as Internal Phone
 
-ym -- "Commands" --> m
-rpi0 -- "RTSP Camera Stream" --> ym
-rpi0 -- "RTSP Camera Stream" --> MM
-MM <-- "WebRTC" --> ed
-MM <-- "WebRTC" --> sm
+  EL ->> IP: segmented video, audio (zoom)
+  IP ->> EL: audio (zoom)
+  EL ->> RPI: audio (ffmpeg)
+  RPI ->> EL: video (ffmpeg, MediaMTX, WebRTC)
 ```
