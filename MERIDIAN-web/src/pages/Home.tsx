@@ -18,10 +18,10 @@ export default function Home() {
             handleClick={() => navigate("/external")}
             text="External"
           />
-          <HomeButton
+          {/* <HomeButton
             handleClick={() => navigate("/internal")}
             text="Internal"
-          />
+          /> */}
         </main>
       </div>
 

@@ -11,13 +11,8 @@ export default function External() {
   const pubPcRef = useRef<RTCPeerConnection | null>(null);
   const [connecting, setConnecting] = useState<boolean>(true);
 
-  const localDeviceConstraints: MediaStreamConstraints = {
-    video: true,
-    audio: true,
-  };
-
   const subUrl = `http://${window.location.hostname}:8889/internal_cam/whep`;
-  const pubUrl = `http://${window.location.hostname}:8889/external_cam/whip`;
+  // const pubUrl = `http://${window.location.hostname}:8889/external_cam/whip`;
 
   useEffect(() => {
     /* ---------- SUBSCRIBE (WHEP) ---------- */
@@ -52,38 +47,38 @@ export default function External() {
     };
 
     /* ---------- PUBLISH (WHIP) ---------- */
-    const initPub = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia(
-        localDeviceConstraints,
-      );
+    // const initPub = async () => {
+    //   const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-      const pc = new RTCPeerConnection();
-      pubPcRef.current = pc;
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+    //   const pc = new RTCPeerConnection();
+    //   pubPcRef.current = pc;
+    //   stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: false,
-        offerToReceiveVideo: false,
-      });
-      await pc.setLocalDescription(offer);
+    //   const offer = await pc.createOffer({
+    //     offerToReceiveAudio: false,
+    //     offerToReceiveVideo: false,
+    //   });
+    //   await pc.setLocalDescription(offer);
 
-      await new Promise<void>((resolve) => {
-        if (pc.iceGatheringState === "complete") return resolve();
-        const onState = () => {
-          if (pc.iceGatheringState === "complete") {
-            pc.removeEventListener("icegatheringstatechange", onState);
-            resolve();
-          }
-        };
-        pc.addEventListener("icegatheringstatechange", onState, { once: true });
-      });
+    //   await new Promise<void>((resolve) => {
+    //     if (pc.iceGatheringState === "complete") return resolve();
+    //     const onState = () => {
+    //       if (pc.iceGatheringState === "complete") {
+    //         pc.removeEventListener("icegatheringstatechange", onState);
+    //         resolve();
+    //       }
+    //     };
+    //     pc.addEventListener("icegatheringstatechange", onState, { once: true });
+    //   });
 
-      postWHIPWHEP(pc, pubUrl, setConnecting);
-    };
+    //   postWHIPWHEP(pc, pubUrl, setConnecting);
+    // };
 
     /* ---------- INIT ---------- */
-    initPub();
-    initSub();
+    (async () => {
+      // await initPub();
+      await initSub();
+    })();
 
     return () => {
       cleanupPcRef(subPcRef);
