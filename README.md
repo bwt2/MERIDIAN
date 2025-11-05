@@ -17,22 +17,13 @@ pnpm dev
 ## Service Architecture
 
 ```mermaid
-flowchart TD
-subgraph MERIDIAN
-    subgraph Raspberry Pi
-        MM["MediaMTX"]
-        ym["Yolo Model"]
-    end
-    rpi0["Raspberry Pi Zero + Camera"]
-    m["Stepper Motor"]
-    id["Internal Device"]
-end
-ed["External device"]
+sequenceDiagram
+  participant RPI as Rpi
+  participant EL as External Laptop (Linux)
+  participant IP as Internal Phone
 
-ym -- "Commands" --> m
-rpi0 -- "UDP<br>(video)" --> ym
-rpi0 -- "UDP<br>(video)" --> MM
-MM <-- "WebRTC<br>(video, audio)" --> ed
-MM -- "WebRTC<br>(video, audio)" --> id
-id -- "WebRTC<br>(audio)" --> MM
+  EL ->> IP: segmented video, audio (zoom)
+  IP ->> EL: audio (zoom)
+  EL ->> RPI: audio (ffmpeg)
+  RPI ->> EL: video (ffmpeg, MediaMTX, WebRTC)
 ```
