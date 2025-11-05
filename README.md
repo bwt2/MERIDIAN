@@ -23,7 +23,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run
-python3 main.py --source /dev/video0 --show
+python3 main.py --video-source /dev/video0 --show
+
+## If you have a file (audio and video can be seperate)
+python3 main.py --video-source my-video.mp4 --audio-source my-video.mp4 --show
 
 # "meridian wake", "meridian sleep"
 # Press 'q' to quit video window
