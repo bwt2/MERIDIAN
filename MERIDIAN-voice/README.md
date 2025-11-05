@@ -13,12 +13,9 @@ brew install portaudio
 ## Installation
 
 ```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  
-
-# Install dependencies
-pip3 install -r requirements.txt
+python3 -m venv venv # or use root venv
+source venv/bin/activate
+pip install -e ./MERIDIAN-voice
 ```
 
 ## Usage

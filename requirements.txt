@@ -1,0 +1,2 @@
+-e ./MERIDIAN-yolo
+-e ./MERIDIAN-voice

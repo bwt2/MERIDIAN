@@ -1,5 +1,6 @@
 import sounddevice as sd
 import numpy as np
+import openwakeword
 from openwakeword.model import Model
 from openwakeword import utils
 import os
@@ -20,26 +21,6 @@ class WakeWordDetection:
     timestamp: datetime
 
 class KeywordDetector:
-    """
-    Generator that you pass a callback fn to or just consume directly.
-
-    Examples:
-        # mic
-        detector = KeywordDetector()
-        for detection in detector.listen():
-            print(f"Got {detection.wake_word}!")
-
-        # From MP4 file:
-        detector = KeywordDetector()
-        for detection in detector.listen(source="recording.mp4"):
-            print(f"Got {detection.wake_word}!")
-
-        # With callback:
-        def my_callback(detection):
-            print(f"Got {detection.wake_word}!")
-        detector.listen_with_callback(my_callback)
-    """
-
     def __init__(
         self,
         custom_models: list = ["meridian_wake.onnx", "meridian_sleep.onnx"],
@@ -59,7 +40,23 @@ class KeywordDetector:
         self.sample_rate = sample_rate
         self.custome_models = custom_models
 
-        existing_models = [m for m in custom_models if os.path.exists(m)]
+        openwakeword.utils.download_models()
+
+        # Resolve model paths relative to package directory
+        pkg_dir = Path(__file__).parent
+        resolved_models = []
+        for model in custom_models:
+            # If path is relative, try package directory first
+            if not os.path.isabs(model):
+                pkg_model_path = pkg_dir / model
+                if pkg_model_path.exists():
+                    resolved_models.append(str(pkg_model_path))
+                elif os.path.exists(model):
+                    resolved_models.append(model)
+            elif os.path.exists(model):
+                resolved_models.append(model)
+
+        existing_models = resolved_models
 
         if existing_models:
             print(f"Loading models: {existing_models}")
@@ -154,46 +151,7 @@ class KeywordDetector:
             print("Fin")
 
     def listen_with_callback(self, callback, stop_condition=None, source=None):
-        """
-        Listen with a callback function.
-
-        Args:
-            callback: Function to call when wake word is detected
-            stop_condition: Optional function that returns True to stop listening
-            source: Optional file path for audio source (None = live mic)
-
-        Example:
-            def handle(det):
-                print(f"Got {det.wake_word}")
-
-            detector.listen_with_callback(handle, source="test.mp4")
-        """
         for detection in self.listen(source=source):
             callback(detection)
             if stop_condition and stop_condition(detection):
                 break
-
-def main():
-    import sys
-
-    detector = KeywordDetector(confidence_threshold=0.5)
-
-    # Check if a file path was provided as argument
-    if len(sys.argv) > 1:
-        audio_file = sys.argv[1]
-        print(f"Processing audio from file: {audio_file}")
-
-        for detection in detector.listen(source=audio_file):
-            print(f"Detected: {detection.wake_word} "
-                  f"(conf: {detection.confidence:.2f}) "
-                  f"at {detection.timestamp.second}s")
-    else:
-        print("mic mode")
-
-        for detection in detector.listen():
-            print(f"Detected: {detection.wake_word} "
-                  f"(conf: {detection.confidence:.2f}) "
-                  f"at {detection.timestamp.strftime('%H:%M:%S')}")
-
-if __name__ == "__main__":
-    main()
