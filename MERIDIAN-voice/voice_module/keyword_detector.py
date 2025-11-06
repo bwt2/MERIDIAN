@@ -4,6 +4,7 @@ import openwakeword
 from openwakeword.model import Model
 from openwakeword import utils
 import os
+import stat
 from typing import Generator, Union, Optional, Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -68,6 +69,12 @@ class KeywordDetector:
             print(f"No custom models found")
             return
 
+    def _is_fifo(self, path):
+        try:
+            return stat.S_ISFIFO(os.stat(path).st_mode)
+        except Exception:
+            return False
+
     def _process_audio_from_file(self, file_path):
         """
         Process audio from mp4
@@ -110,13 +117,51 @@ class KeywordDetector:
 
         print("File done")
 
+    def _process_audio_from_stream(self, fifo_path):
+        print(f"FIFO Detected!: {fifo_path}")
+
+        try:
+            with open(fifo_path, 'rb') as fifo:
+                while True:
+                    bytes_to_read = self.chunk_size * 2
+                    chunk_bytes = fifo.read(bytes_to_read)
+
+                    # EOF
+                    if len(chunk_bytes) == 0:
+                        print("FIFO closed (EOF)")
+                        break
+
+                    if len(chunk_bytes) < bytes_to_read:
+                        continue
+
+                    chunk = np.frombuffer(chunk_bytes, dtype=np.int16)
+
+                    # inference
+                    predictions = self.model.predict(chunk)
+
+                    for wake_word, score in predictions.items():
+                        if score > self.confidence_threshold:
+                            yield WakeWordDetection(
+                                wake_word=wake_word,
+                                confidence=score,
+                                timestamp=datetime.now()
+                            )
+
+        except Exception as e:
+            print(f"Error")
+        finally:
+            print("FIFO DONE")
+
     def listen(self, source=None):
-        # If source - process it
         if source is not None:
-            yield from self._process_audio_from_file(str(source))
+            if self._is_fifo(source):
+                yield from self._process_audio_from_stream(str(source))
+            else:
+                # Regular file - load and process
+                yield from self._process_audio_from_file(str(source))
             return
 
-        # Otherwise use mic
+        # Otherwise use microphone
         try:
             with sd.InputStream(
                 samplerate=self.sample_rate,

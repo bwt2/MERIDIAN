@@ -1,5 +1,4 @@
 import threading
-from queue import Queue
 from typing import Optional
 import cv2
 import time
@@ -26,9 +25,10 @@ class MeridianController:
         self.audio_source = audio_source
         self.show = show
         self.tracking_enabled = False
-        # NOTE this is not the queue for frames (ie if yolo is too slow). it's a backlog for stepper motor
-        self.detection_queue: Queue[Optional[PersonDetection]] = Queue(maxsize=10)
         self.shutdown_flag = threading.Event()
+
+        self.last_motor_command_time = 0
+        self.motor_command_interval = 1.0  # Send command max once per second
 
         # yolo iff video source is given
         if self.video_source:
@@ -115,16 +115,29 @@ class MeridianController:
                 print(f"Frame {frame_count}: Offset {offset_percent:+.1f}% " # signed
                       f"({direction}, conf: {detection.conf:.2f})")
 
-                ####################################################
+            # TODO idk how the stepper works but this limits commands sent
+            # to every 1 sec so as not to fry it
+            if self.tracking_enabled and detection:
+                current_time = time.time()
+                if current_time - self.last_motor_command_time >= self.motor_command_interval:
+                    # NOTE it looks something like this? may need to convert
+                    # BipolarStepper into a module for ez install
 
-                # TODO: Send tracking commands to stepper motor
-                # Consume the detection queue
+                    # from stepper import BipolarStepper
+                    #
+                    # # Initialise stepper (or keep as instance variable)
+                    # stepper = BipolarStepper(
+                    #     pwmPinA=12, dirPinA=13,
+                    #     pwmPinB=16, dirPinB=19,
+                    #     RPM=60, stepsPerRotation=200
+                    # )
+                    # # Convert offset to motor angle
+                    # # offset ranges from -1 (far left) to 1 (far right)
+                    # # Scale to degrees
+                    # angle = detection.offset * 45
+                    # stepper.rotate(angle=angle)
 
-                ####################################################
-
-            # Con
-            if not self.detection_queue.full():
-                self.detection_queue.put(detection)
+                    self.last_motor_command_time = current_time
 
             if self.show and frame is not None:
                 cv2.imshow('MERIDIAN - Person Tracking', frame)
