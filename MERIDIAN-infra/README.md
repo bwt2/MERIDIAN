@@ -17,7 +17,7 @@ cd external-device
 PI_IP=0.0.0.0 PORT=5004 MONITOR=$(./select-audio-monitor.sh) ./rtp-audio-broadcaster.sh
 ```
 
-Listen to sine wave from rtp endpoint.
+Listen to audio from rtp endpoint.
 ```bash
 cd rpi
 PORT=5004 MODE=play ./rtp-audio-listener.sh
