@@ -6,21 +6,35 @@ Monorepo for all relevant MERIDIAN source code.
 Broadcast audio to rtp for Rasberry PI.
 ```bash
 cd MERIDIAN-infra/external-device    
-PI_IP=0.0.0.0 PORT=5004 MONITOR=$(./select-audio-monitor.sh) ./rtp-audio-broadcaster.sh # insert actual PI_IP here
+PI_IP=10.74.130.118 PORT=5004 MONITOR=$(./select-audio-monitor.sh) ./rtp-audio-broadcaster.sh # insert actual PI_IP here
 ```
-  
+Connect to webRTC client:
+```
+http://<pi_ip>:5173
+```
+
 ### Raspberry PI
 ### WebRTC Setup
-Setup MediaMTX WebRTC server to get PI cam UDP -> WebRTC:
+Setup MediaMTX WebRTC server to get PI cam UDP -> WebRTC. On the RPI:
+
+```bash
+ssh <rpi-0>
+rpicam-vid -t 0 -n --inline -o - | ffmpeg -hide_banner -loglevel warning -re -f h264 -i -   -rtsp_transport tcp   -c:v copy   -f rtsp rtsp://10.74.130.118:8554/internal_cam
+```
 ```bash
 cd MERIDIAN-infra/rpi
 docker compose up -d
 ```
 Set up WebRTC web client: 
 ```bash
+# install npm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+nvm install 20
+nvm use 20
+
 cd MERIDIAN-web
-pnpm install
-pnpm dev
+npm install
+npm run dev -- --host
 ```
 ### Voice Detection and Tracking Setup 
 Setup rtp listener for MERIDIAN voice detection + tracking. For more details, see `MERIDIAN-infra`'s `README.md`.
