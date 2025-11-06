@@ -116,11 +116,11 @@ class MeridianController:
                 print(f"Frame {frame_count}: Offset {offset_percent:+.1f}% " # signed
                       f"({direction}, conf: {detection.conf:.2f})")
 
-            # Stepper motor control - rate limited, using most recent detection only
+            # NOTE rate limited (feel free) to adjust so to not kill stepper
+            # TODO
             if self.tracking_enabled and detection:
                 current_time = time.time()
                 if current_time - self.last_motor_command_time >= self.motor_command_interval:
-                    # TODO: Uncomment when ready to integrate stepper motor
                     # from stepper import BipolarStepper
                     #
                     # # Initialise stepper (or keep as instance variable)
@@ -131,8 +131,7 @@ class MeridianController:
                     # )
                     #
                     # # Convert offset to motor angle
-                    # # offset ranges from -1.0 (far left) to +1.0 (far right)
-                    # # Scale to degrees (e.g., ±45° range)
+                    # # offset ranges from -1 (far left) to 1 (far right)
                     # angle = detection.offset * 45
                     # stepper.rotate(angle=angle)
 
