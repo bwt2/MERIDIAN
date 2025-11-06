@@ -1,3 +1,3 @@
-from .stepper import BipolarStepper
+from .stepper import setup, left, right, STEPS_PER_MOVE
 
-__all__ = ["BipolarStepper"]
+__all__ = ["setup", "left", "right", "STEPS_PER_MOVE"]
