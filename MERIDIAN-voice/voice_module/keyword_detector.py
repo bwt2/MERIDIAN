@@ -81,15 +81,12 @@ class KeywordDetector:
         """
         print(f"Loading audio from {file_path}...")
 
-        print("0")
-        print(file_path)
         audio = AudioSegment.from_file(file_path)
-        print("1")
+
         # Convert to mono channel
         audio = audio.set_channels(1)
         audio = audio.set_frame_rate(self.sample_rate)
         audio = audio.set_sample_width(2)
-        print("2")
         samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
 
         # Process chunkwise/discretise it
