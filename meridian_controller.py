@@ -27,6 +27,7 @@ class MeridianController:
         self.tracking_enabled = False
         self.shutdown_flag = threading.Event()
 
+        # Rate limiting for stepper motor commands (use most recent detection only)
         self.last_motor_command_time = 0
         self.motor_command_interval = 1.0  # Send command max once per second
 
@@ -115,14 +116,11 @@ class MeridianController:
                 print(f"Frame {frame_count}: Offset {offset_percent:+.1f}% " # signed
                       f"({direction}, conf: {detection.conf:.2f})")
 
-            # TODO idk how the stepper works but this limits commands sent
-            # to every 1 sec so as not to fry it
+            # Stepper motor control - rate limited, using most recent detection only
             if self.tracking_enabled and detection:
                 current_time = time.time()
                 if current_time - self.last_motor_command_time >= self.motor_command_interval:
-                    # NOTE it looks something like this? may need to convert
-                    # BipolarStepper into a module for ez install
-
+                    # TODO: Uncomment when ready to integrate stepper motor
                     # from stepper import BipolarStepper
                     #
                     # # Initialise stepper (or keep as instance variable)
@@ -131,13 +129,15 @@ class MeridianController:
                     #     pwmPinB=16, dirPinB=19,
                     #     RPM=60, stepsPerRotation=200
                     # )
+                    #
                     # # Convert offset to motor angle
-                    # # offset ranges from -1 (far left) to 1 (far right)
-                    # # Scale to degrees
+                    # # offset ranges from -1.0 (far left) to +1.0 (far right)
+                    # # Scale to degrees (e.g., ±45° range)
                     # angle = detection.offset * 45
                     # stepper.rotate(angle=angle)
 
                     self.last_motor_command_time = current_time
+                    print(f"[MOTOR] Would rotate to {detection.offset * 45:+.1f}°")
 
             if self.show and frame is not None:
                 cv2.imshow('MERIDIAN - Person Tracking', frame)
