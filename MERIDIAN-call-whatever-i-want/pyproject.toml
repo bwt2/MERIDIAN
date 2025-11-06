@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stepper_module"
+version = "0.1.0"
+description = "Stepperstuff"
+authors = [{name = "MERIDIAN"}]
+requires-python = ">=3.8"
+dependencies = [
+    "gpiozero>=1.6.0",
+    "lgpio>=0.2.0",
+    "opencv-python>=4.8.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
