@@ -17,3 +17,4 @@ stepper = BipolarStepper(pwmPinA=12, dirPinA=13, pwmPinB=16, dirPinB=19, RPM=60)
 stepper.rotate(steps=200)  # Rotate 200 steps
 stepper.rotate(angle=90)   # Rotate 90 degrees
 ```
+
