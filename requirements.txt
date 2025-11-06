@@ -1,2 +1,3 @@
 -e ./MERIDIAN-yolo
 -e ./MERIDIAN-voice
+-e ./MERIDIAN-call-whatever-i-want
