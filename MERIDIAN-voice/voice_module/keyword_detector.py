@@ -4,6 +4,7 @@ import openwakeword
 from openwakeword.model import Model
 from openwakeword import utils
 import os
+import time
 from typing import Generator, Union, Optional, Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -80,13 +81,15 @@ class KeywordDetector:
         """
         print(f"Loading audio from {file_path}...")
 
+        print("0")
+        print(file_path)
         audio = AudioSegment.from_file(file_path)
-
+        print("1")
         # Convert to mono channel
         audio = audio.set_channels(1)
         audio = audio.set_frame_rate(self.sample_rate)
         audio = audio.set_sample_width(2)
-
+        print("2")
         samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
 
         # Process chunkwise/discretise it
@@ -110,7 +113,44 @@ class KeywordDetector:
 
         print("File done")
 
+    def _listen_from_pcm_fifo(self, fifo_path: str):
+        if not os.path.exists(fifo_path):
+            os.mkfifo(fifo_path)
+
+        print(f"Opening PCM FIFO {fifo_path}... (waiting for writer)")
+        # open unbuffered so chunks arrive promptly
+        with open(fifo_path, "rb", buffering=0) as f:
+            buf = bytearray()
+            bytes_per_sample = 2  # int16
+            frame_bytes = self.chunk_size * bytes_per_sample * 1  # CHANNELS=1
+
+            while True:
+                data = f.read(4096)
+                if not data:
+                    time.sleep(0.005)
+                    continue
+
+                buf.extend(data)
+                while len(buf) >= frame_bytes:
+                    chunk = bytes(buf[:frame_bytes])
+                    del buf[:frame_bytes]
+                    pcm = np.frombuffer(chunk, dtype=np.int16)
+
+                    predictions = self.model.predict(pcm)
+                    for wake_word, score in predictions.items():
+                        if score > self.confidence_threshold:
+                            yield WakeWordDetection(
+                                wake_word=wake_word,
+                                confidence=score,
+                                timestamp=datetime.now()
+                            )
+
     def listen(self, source=None):
+        # If source is a FIFO PCM path, use the streaming reader
+        if source and str(source).endswith(".pcm"):
+            yield from self._listen_from_pcm_fifo(str(source))
+            return
+    
         # If source - process it
         if source is not None:
             yield from self._process_audio_from_file(str(source))

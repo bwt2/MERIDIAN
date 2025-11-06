@@ -17,9 +17,7 @@ Installation:
     npm install
     npm dev
     ```
-
-## Test
-
+    
 ### Test
 Mock external camera stream using local `/dev/video0` camera device, broadcast RSTP to `rtsp://127.0.0.1:8554/external_cam` to be read by `/internal` page.
 ```bash
