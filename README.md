@@ -18,7 +18,7 @@ http://<pi_ip>:5173
 Setup MediaMTX WebRTC server to get PI cam UDP -> WebRTC. On the RPI:
 
 ```bash
-ssh <rpi-0>
+ssh <rpi-0> # ssh rpi-win-zero@10.42.0.2
 rpicam-vid -t 0 -n --inline -o - | ffmpeg -hide_banner -loglevel warning -re -f h264 -i -   -rtsp_transport tcp   -c:v copy   -f rtsp rtsp://10.74.130.118:8554/internal_cam
 ```
 ```bash
@@ -45,9 +45,12 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # setup rtp listener and  MERIDIAN voice detection + tracking
-cd MERIDIAN-infra/rpi
 mkfifo /tmp/audio_pipe.pcm
-PORT=5004 OUT=/tmp/audio_pipe.pcm AR=16000 CHANNELS=1 MODE=pcm ./rtp-audio-listener.sh && python3 ../../main.py --video-source /dev/video0 --audio-source /tmp/audio_pipe.pcm --show
+
+python3 main.py --video-source rtsp://10.74.130.118:8554/internal_cam --audio-source /tmp/audio_pipe.pcm 
+
+cd MERIDIAN-infra/rpi
+PORT=5004 OUT=/tmp/audio_pipe.pcm AR=16000 CHANNELS=1 MODE=pcm ./rtp-audio-listener.sh 
 ```
 
 #### Testing
