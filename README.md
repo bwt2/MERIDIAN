@@ -76,12 +76,14 @@ python3 main.py --video-source my-video.mp4 --audio-source my-video.mp4 --show
 
 ```mermaid
 sequenceDiagram
+  participant SM as Stepper Motor
   participant RPI as Rpi
   participant EL as External Laptop (Linux)
   participant IP as Internal Phone
 
   EL ->> IP: segmented video, audio (zoom)
-  IP ->> EL: audio (zoom)
-  EL ->> RPI: audio (ffmpeg)
-  RPI ->> EL: video (ffmpeg, MediaMTX, WebRTC)
+  IP ->> EL: phone audio (zoom)
+  EL ->> RPI: phone audio (ffmpeg)
+  RPI ->> EL: Raspberry Pi camera video (ffmpeg, MediaMTX, WebRTC)
+  RPI ->> SM: stepper motor commands (YOLO)
 ```
