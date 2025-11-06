@@ -95,7 +95,7 @@ export default function External() {
         disablePictureInPicture
         muted
         className="
-          rotate-90 sm:rotate-0 origin-center
+          rotate-270 origin-center
           w-auto h-auto
           max-w-[100svh] max-h-[100svw]
           sm:max-w-[100svw] sm:max-h-[100svh]
