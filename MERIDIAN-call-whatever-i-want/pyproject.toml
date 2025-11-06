@@ -10,6 +10,7 @@ authors = [{name = "MERIDIAN"}]
 requires-python = ">=3.8"
 dependencies = [
     "gpiozero>=1.6.0",
+    "lgpio>=0.2.0",
     "opencv-python>=4.8.0",
 ]
 

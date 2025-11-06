@@ -130,7 +130,7 @@ class MeridianController:
                     # We want to keep person near centre (offset 0)
 
                     # 20% tolerance
-                    if abs(detection.offset) > 0.2:
+                    if abs(detection.offset) > 0.1:
                         # Proportional control: scale steps by offset magnitude
                         steps = int(abs(detection.offset) * STEPS_PER_MOVE)
 
